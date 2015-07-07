@@ -1,0 +1,41 @@
+language:
+  - cpp
+
+compiler:
+  - gcc
+
+notifications:
+  email:
+    recipients:
+      - aswinthomas@gmail.com
+    on_success: always #[always|never|change] # default: change
+    on_failure: always #[always|never|change] # default: always
+
+before_install: # Use this to prepare the system to install prerequisites or dependencies
+  # Define some config vars
+  - export ROS_DISTRO=hydro
+  - export CI_SOURCE_PATH=$(pwd)
+  - export REPOSITORY_NAME=${PWD##*/}
+  - echo "Testing branch $TRAVIS_BRANCH of $REPOSITORY_NAME"
+  - sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
+  - wget https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -O - | sudo apt-key add -
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq -y ros-$ROS_DISTRO-ros-base
+  - sudo rosdep init
+  - rosdep update
+
+#install: # Use this to install any prerequisites or dependencies necessary to run your build
+
+before_script: # Use this to prepare your build for testing e.g. copy database configurations, environment variables, etc.
+  - mkdir -p ~/catkin_ws/src
+  - mv $TRAVIS_BUILD_DIR ~/catkin_ws/src
+  - cd ~/catkin_ws/src 
+  - source /opt/ros/hydro/setup.bash 
+  - catkin_init_workspace
+  - grep -c ^processor /proc/cpuinfo
+  - make -j$(grep -c ^processor /proc/cpuinfo)
+
+script: 
+  - cd ~/catkin_ws/ && catkin_make -DCMAKE_BUILD_TYPE=Release
+  - cd ~/catkin_ws/ && catkin_make run_tests_$REPOSITORY_NAME
+
